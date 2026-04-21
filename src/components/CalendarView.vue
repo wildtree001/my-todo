@@ -176,6 +176,8 @@
               v-for="(day, dayIndex) in weekDaysData"
               :key="day.dateStr"
               class="relative"
+              @dragover.prevent
+              @drop="handleWeekViewDrop($event, day)"
             >
               <!-- Grid Background Cells -->
               <div class="space-y-1">
@@ -188,8 +190,6 @@
                     day.isSelected ? 'bg-blue-100 dark:bg-blue-900/40' : ''
                   ]"
                   @click="selectDate(day, hour)"
-                  @dragover.prevent
-                  @drop="handleDrop($event, day, hour)"
                 >
                 </div>
               </div>
@@ -366,6 +366,8 @@ const selectedTodo = ref(null)
 
 // Drag and drop
 const draggedTodo = ref(null)
+const dragOffsetPixels = ref(0)
+const hourHeight = 60 // px (h-14 = 56px + 4px gap)
 
 // Week days
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -615,8 +617,14 @@ const handleCreateSubmit = (todoData) => {
 const handleDragStart = (event, todo) => {
   draggedTodo.value = todo
   event.dataTransfer.effectAllowed = 'move'
+  
+  // Calculate mouse offset within the task element
+  // This helps when dragging a multi-hour task - the grab point should be preserved
+  const rect = event.target.getBoundingClientRect()
+  dragOffsetPixels.value = event.clientY - rect.top
 }
 
+// Handle drop for month view
 const handleDrop = (event, day, hour = null) => {
   if (!draggedTodo.value) return
   
@@ -695,9 +703,6 @@ const getTaskPositionStyle = (todo) => {
   const startHour = new Date(todo.startDate).getHours()
   const duration = getTaskDuration(todo)
   
-  // Each hour slot is h-14 (56px) + 4px gap = 60px
-  const hourHeight = 60 // px (h-14 = 56px + 4px gap)
-  
   const top = startHour * hourHeight
   const height = duration * hourHeight - 4 // subtract one gap
   
@@ -705,6 +710,68 @@ const getTaskPositionStyle = (todo) => {
     top: `${top}px`,
     height: `${height}px`
   }
+}
+
+// Handle drop for week view (with position-based hour calculation)
+const handleWeekViewDrop = (event, day) => {
+  if (!draggedTodo.value) return
+  
+  const todo = draggedTodo.value
+  
+  // Get the column container element
+  const columnEl = event.currentTarget
+  const rect = columnEl.getBoundingClientRect()
+  
+  // Calculate mouse position relative to the column top
+  // The position includes the gap between time slots
+  const relativeY = event.clientY - rect.top
+  
+  // Calculate which hour the mouse is over
+  // Each hour slot is hourHeight pixels (including gap)
+  const mouseHour = Math.floor(relativeY / hourHeight)
+  
+  // Calculate the offset in hours (where the user grabbed the task)
+  const offsetHours = dragOffsetPixels.value / hourHeight
+  
+  // Calculate new start hour: mouse hour minus the grab offset
+  // This ensures the grab point aligns with the mouse position
+  let newStartHour = mouseHour - offsetHours
+  
+  // Clamp to valid range (0-23)
+  newStartHour = Math.max(0, Math.min(23, Math.round(newStartHour)))
+  
+  // Calculate duration
+  let durationHours = 1
+  if (todo.startDate && todo.endDate) {
+    const start = new Date(todo.startDate)
+    const end = new Date(todo.endDate)
+    const durationMs = end - start
+    durationHours = durationMs / (1000 * 60 * 60)
+    durationHours = Math.max(durationHours, 1)
+  }
+  
+  // Calculate new end hour (clamped to 24 for end of day)
+  let newEndHour = newStartHour + durationHours
+  
+  // Create new dates
+  const newStartDate = new Date(day.date)
+  newStartDate.setHours(newStartHour, 0, 0, 0)
+  
+  const updates = {
+    startDate: newStartDate.toISOString()
+  }
+  
+  if (todo.endDate) {
+    const newEndDate = new Date(day.date)
+    // If end hour exceeds 24, it will roll over to next day
+    // But we keep it within the same day for simplicity
+    newEndDate.setHours(Math.min(newEndHour, 24), 0, 0, 0)
+    updates.endDate = newEndDate.toISOString()
+  }
+  
+  todosStore.updateTodo(todo.id, updates)
+  draggedTodo.value = null
+  dragOffsetPixels.value = 0
 }
 
 // Format time (hour only)

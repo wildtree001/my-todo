@@ -1,6 +1,6 @@
 <template>
   <div class="datetime-picker">
-    <div class="flex gap-2">
+    <div class="flex gap-2 items-end">
       <!-- Date Picker -->
       <div class="flex-1">
         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -9,19 +9,19 @@
         <input
           v-model="selectedDate"
           type="date"
-          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           @change="updateValue"
         />
       </div>
       
       <!-- Hour Picker -->
-      <div class="w-24">
+      <div class="w-28">
         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
           时间
         </label>
         <select
           v-model="selectedHour"
-          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           @change="updateValue"
         >
           <option
