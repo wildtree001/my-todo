@@ -30,7 +30,6 @@ export const useTodosStore = defineStore('todos', () => {
       dueDate: todoData.dueDate || null,
       startDate: todoData.startDate || null,
       endDate: todoData.endDate || null,
-      subtasks: [],
       recurrence: todoData.recurrence || null, // daily, weekly, monthly, yearly, custom
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -135,47 +134,6 @@ export const useTodosStore = defineStore('todos', () => {
     todos.value.push(nextTodo)
   }
 
-  // Add subtask
-  const addSubtask = (todoId, subtaskData) => {
-    const todo = todos.value.find(t => t.id === todoId)
-    if (todo) {
-      todo.subtasks.push({
-        id: generateId(),
-        title: subtaskData.title,
-        completed: false,
-        createdAt: new Date().toISOString()
-      })
-      todo.updatedAt = new Date().toISOString()
-      saveTodos(todos.value)
-    }
-  }
-
-  // Toggle subtask
-  const toggleSubtask = (todoId, subtaskId) => {
-    const todo = todos.value.find(t => t.id === todoId)
-    if (todo) {
-      const subtask = todo.subtasks.find(s => s.id === subtaskId)
-      if (subtask) {
-        subtask.completed = !subtask.completed
-        todo.updatedAt = new Date().toISOString()
-        saveTodos(todos.value)
-      }
-    }
-  }
-
-  // Delete subtask
-  const deleteSubtask = (todoId, subtaskId) => {
-    const todo = todos.value.find(t => t.id === todoId)
-    if (todo) {
-      const index = todo.subtasks.findIndex(s => s.id === subtaskId)
-      if (index !== -1) {
-        todo.subtasks.splice(index, 1)
-        todo.updatedAt = new Date().toISOString()
-        saveTodos(todos.value)
-      }
-    }
-  }
-
   // Filtered and sorted todos
   const filteredTodos = computed(() => {
     let result = [...todos.value]
@@ -277,9 +235,6 @@ export const useTodosStore = defineStore('todos', () => {
     createTodo,
     updateTodo,
     deleteTodo,
-    toggleComplete,
-    addSubtask,
-    toggleSubtask,
-    deleteSubtask
+    toggleComplete
   }
 })

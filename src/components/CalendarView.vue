@@ -137,7 +137,7 @@
         class="overflow-x-auto"
       >
         <div class="min-w-[800px]">
-          <!-- Time Column Header -->
+          <!-- Day Headers -->
           <div class="grid grid-cols-8 gap-1 mb-2">
             <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">
               时间
@@ -156,50 +156,66 @@
             </div>
           </div>
 
-          <!-- Time Slots -->
-          <div class="space-y-1">
-            <div
-              v-for="hour in timeSlots"
-              :key="hour"
-              class="grid grid-cols-8 gap-1"
-            >
-              <div class="text-xs text-gray-500 dark:text-gray-400 text-right pr-2 py-2">
-                {{ hour.toString().padStart(2, '0') }}:00
-              </div>
+          <!-- Time Grid with Absolute Positioned Tasks -->
+          <div class="grid grid-cols-8 gap-1">
+            <!-- Time Labels Column -->
+            <div class="space-y-1">
               <div
-                v-for="day in weekDaysData"
-                :key="day.dateStr + '-' + hour"
-                class="min-h-12 border border-gray-200 dark:border-gray-700 rounded p-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                :class="{
-                  'bg-blue-50 dark:bg-blue-900/20': day.isToday,
-                  'bg-blue-100 dark:bg-blue-900/40': day.isSelected
-                }"
-                @click="selectDate(day, hour)"
-                @dragover.prevent
-                @drop="handleDrop($event, day, hour)"
+                v-for="hour in timeSlots"
+                :key="hour"
+                class="h-14 flex items-center justify-end pr-2"
               >
-                <div class="space-y-1">
-                  <div
-                    v-for="todo in getTodosForTimeSlot(day, hour)"
-                    :key="todo.id"
-                    class="text-xs p-1 rounded cursor-move"
-                    :class="[
-                      'hover:opacity-80',
-                      todo.completed ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 line-through' :
-                      todo.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                      todo.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                      todo.priority === 'low' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    ]"
-                    draggable="true"
-                    @dragstart="handleDragStart($event, todo)"
-                    @click.stop="handleTodoClick(todo)"
-                  >
-                    <div class="font-medium truncate">{{ todo.title }}</div>
-                    <div v-if="todo.startDate && todo.endDate" class="text-xs opacity-75 truncate">
-                      <Icon name="clock" class="w-3 h-3 inline" />
-                      {{ formatTime(todo.startDate) }} - {{ formatTime(todo.endDate) }}
-                    </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ hour.toString().padStart(2, '0') }}:00
+                </span>
+              </div>
+            </div>
+
+            <!-- Day Columns -->
+            <div
+              v-for="(day, dayIndex) in weekDaysData"
+              :key="day.dateStr"
+              class="relative"
+            >
+              <!-- Grid Background Cells -->
+              <div class="space-y-1">
+                <div
+                  v-for="hour in timeSlots"
+                  :key="hour"
+                  class="h-14 border border-gray-200 dark:border-gray-700 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  :class="[
+                    day.isToday ? 'bg-blue-50 dark:bg-blue-900/20' : '',
+                    day.isSelected ? 'bg-blue-100 dark:bg-blue-900/40' : ''
+                  ]"
+                  @click="selectDate(day, hour)"
+                  @dragover.prevent
+                  @drop="handleDrop($event, day, hour)"
+                >
+                </div>
+              </div>
+
+              <!-- Tasks Layer (Absolute Positioned) -->
+              <div class="absolute inset-0 pointer-events-none">
+                <div
+                  v-for="todo in getTasksForDay(day)"
+                  :key="todo.id"
+                  class="pointer-events-auto absolute left-0.5 right-0.5 rounded px-1 py-0.5 cursor-move text-xs z-10 overflow-hidden"
+                  :class="[
+                    'hover:opacity-90 transition-all shadow-sm',
+                    todo.completed ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 line-through' :
+                    todo.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                    todo.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800' :
+                    todo.priority === 'low' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' :
+                    'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                  ]"
+                  :style="getTaskPositionStyle(todo)"
+                  draggable="true"
+                  @dragstart="handleDragStart($event, todo)"
+                  @click.stop="handleTodoClick(todo)"
+                >
+                  <div class="font-medium truncate">{{ todo.title }}</div>
+                  <div v-if="todo.startDate && todo.endDate && getTaskDuration(todo) >= 1" class="text-xs opacity-75 truncate">
+                    {{ formatTime(todo.startDate) }} - {{ formatTime(todo.endDate) }}
                   </div>
                 </div>
               </div>
@@ -648,13 +664,47 @@ const handleDrop = (event, day, hour = null) => {
   draggedTodo.value = null
 }
 
-// Get todos for time slot
+// Get todos for time slot (for compatibility)
 const getTodosForTimeSlot = (day, hour) => {
   return day.todos.filter(todo => {
     if (!todo.startDate) return false
     const startHour = new Date(todo.startDate).getHours()
     return startHour === hour
   })
+}
+
+// Get all tasks for a specific day
+const getTasksForDay = (day) => {
+  return day.todos.filter(todo => todo.startDate)
+}
+
+// Get task duration in hours
+const getTaskDuration = (todo) => {
+  if (!todo.startDate || !todo.endDate) return 1
+  const start = new Date(todo.startDate)
+  const end = new Date(todo.endDate)
+  const durationMs = end - start
+  const durationHours = durationMs / (1000 * 60 * 60)
+  return Math.max(durationHours, 1)
+}
+
+// Calculate task position style for week view
+const getTaskPositionStyle = (todo) => {
+  if (!todo.startDate) return {}
+  
+  const startHour = new Date(todo.startDate).getHours()
+  const duration = getTaskDuration(todo)
+  
+  // Each hour slot is h-14 (56px) + 4px gap = 60px
+  const hourHeight = 60 // px (h-14 = 56px + 4px gap)
+  
+  const top = startHour * hourHeight
+  const height = duration * hourHeight - 4 // subtract one gap
+  
+  return {
+    top: `${top}px`,
+    height: `${height}px`
+  }
 }
 
 // Format time (hour only)
