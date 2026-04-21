@@ -63,65 +63,18 @@
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             开始时间
           </label>
-          <input
-            v-model="form.startDate"
-            type="datetime-local"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <DateTimePicker v-model="form.startDate" />
         </div>
         <div>
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             结束时间
           </label>
-          <input
-            v-model="form.endDate"
-            type="datetime-local"
-            :class="[
-              'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent',
-              formError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
-            ]"
-          />
+          <DateTimePicker v-model="form.endDate" />
+          <p v-if="formError" class="text-sm text-red-500 mt-1">
+            {{ formError }}
+          </p>
         </div>
       </div>
-      <p v-if="formError" class="text-sm text-red-500">
-        {{ formError }}
-      </p>
-    </div>
-
-    <!-- Subtasks -->
-    <div v-if="editingTodo" class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        子任务
-      </label>
-      <div class="space-y-2">
-        <div
-          v-for="(subtask, index) in editingTodo.subtasks"
-          :key="subtask.id"
-          class="flex items-center gap-2"
-        >
-          <input
-            type="text"
-            :value="subtask.title"
-            @change="updateSubtask(index, $event.target.value)"
-            class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-          />
-          <button
-            type="button"
-            @click="removeSubtask(index)"
-            class="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-          >
-            <Icon name="x" class="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <button
-        type="button"
-        @click="addSubtask"
-        class="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
-      >
-        <Icon name="plus" class="w-4 h-4" />
-        添加子任务
-      </button>
     </div>
 
     <!-- Actions -->
@@ -147,6 +100,7 @@
 import { reactive, computed, watch, ref } from 'vue'
 import Icon from './Icon.vue'
 import CategorySelector from './CategorySelector.vue'
+import DateTimePicker from './DateTimePicker.vue'
 
 const props = defineProps({
   editTodo: {
@@ -226,21 +180,6 @@ const formatToHourPrecision = (dateStr) => {
   const date = new Date(dateStr)
   date.setMinutes(0, 0, 0)
   return date.toISOString()
-}
-
-const addSubtask = () => {
-  if (!editingTodo.value) return
-  emit('add-subtask', { title: '新子任务' })
-}
-
-const updateSubtask = (index, title) => {
-  if (!editingTodo.value) return
-  emit('update-subtask', { index, title })
-}
-
-const removeSubtask = (index) => {
-  if (!editingTodo.value) return
-  emit('remove-subtask', index)
 }
 
 // Watch for editTodo changes

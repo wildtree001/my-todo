@@ -75,20 +75,6 @@
             </span>
           </span>
         </div>
-
-        <!-- Subtasks progress -->
-        <div v-if="todo.subtasks.length > 0" class="mt-2">
-          <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <Icon name="list-checks" class="w-4 h-4" />
-            <span>{{ completedSubtasks }}/{{ todo.subtasks.length }} 子任务</span>
-            <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                class="h-full bg-green-500 transition-all"
-                :style="{ width: subtaskProgress + '%' }"
-              />
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Actions -->
@@ -130,15 +116,6 @@ const categoriesStore = useCategoriesStore()
 const isOverdue = computed(() => {
   if (!props.todo.dueDate || props.todo.completed) return false
   return new Date(props.todo.dueDate) < new Date()
-})
-
-const completedSubtasks = computed(() => {
-  return props.todo.subtasks.filter(s => s.completed).length
-})
-
-const subtaskProgress = computed(() => {
-  if (props.todo.subtasks.length === 0) return 0
-  return Math.round((completedSubtasks.value / props.todo.subtasks.length) * 100)
 })
 
 const formatDate = (dateStr) => {
