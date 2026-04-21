@@ -41,11 +41,28 @@
 
         <!-- Meta info -->
         <div class="mt-2 flex items-center gap-4 flex-wrap text-sm text-gray-500 dark:text-gray-400">
+          <!-- Time Period -->
+          <span v-if="todo.startDate && todo.endDate">
+            <Icon name="clock" class="w-4 h-4 inline" />
+            {{ formatDate(todo.startDate) }} - {{ formatDate(todo.endDate) }}
+          </span>
+          <span v-else-if="todo.startDate">
+            <Icon name="clock" class="w-4 h-4 inline" />
+            开始: {{ formatDate(todo.startDate) }}
+          </span>
+          <span v-else-if="todo.endDate">
+            <Icon name="clock" class="w-4 h-4 inline" />
+            结束: {{ formatDate(todo.endDate) }}
+          </span>
+          
+          <!-- Due Date -->
           <span v-if="todo.dueDate" :class="{ 'text-red-500': isOverdue }">
             <Icon name="calendar" class="w-4 h-4 inline" />
-            {{ formatDate(todo.dueDate) }}
+            截止: {{ formatDate(todo.dueDate) }}
             <span v-if="isOverdue" class="text-red-500">(已逾期)</span>
           </span>
+          
+          <!-- Categories -->
           <span v-if="todo.categories.length > 0" class="flex items-center gap-1">
             <Icon name="tag" class="w-4 h-4" />
             <span

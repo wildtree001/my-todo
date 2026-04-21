@@ -28,6 +28,8 @@ export const useTodosStore = defineStore('todos', () => {
       priority: todoData.priority || 'none', // high, medium, low, none
       categories: todoData.categories || [],
       dueDate: todoData.dueDate || null,
+      startDate: todoData.startDate || null,
+      endDate: todoData.endDate || null,
       subtasks: [],
       recurrence: todoData.recurrence || null, // daily, weekly, monthly, yearly, custom
       createdAt: new Date().toISOString(),
@@ -89,24 +91,47 @@ export const useTodosStore = defineStore('todos', () => {
     nextTodo.createdAt = new Date().toISOString()
     nextTodo.updatedAt = new Date().toISOString()
 
-    let nextDate = new Date(todo.dueDate || Date.now())
-
-    switch (todo.recurrence.type) {
-      case 'daily':
-        nextDate.setDate(nextDate.getDate() + (todo.recurrence.interval || 1))
-        break
-      case 'weekly':
-        nextDate.setDate(nextDate.getDate() + (todo.recurrence.interval || 1) * 7)
-        break
-      case 'monthly':
-        nextDate.setMonth(nextDate.getMonth() + (todo.recurrence.interval || 1))
-        break
-      case 'yearly':
-        nextDate.setFullYear(nextDate.getFullYear() + (todo.recurrence.interval || 1))
-        break
+    const getIntervalDays = () => {
+      const interval = todo.recurrence.interval || 1
+      switch (todo.recurrence.type) {
+        case 'daily':
+          return interval
+        case 'weekly':
+          return interval * 7
+        case 'monthly':
+          return interval * 30
+        case 'yearly':
+          return interval * 365
+        default:
+          return 1
+      }
     }
 
-    nextTodo.dueDate = nextDate.toISOString()
+    const addInterval = (date) => {
+      if (!date) return null
+      const newDate = new Date(date)
+      const interval = todo.recurrence.interval || 1
+      switch (todo.recurrence.type) {
+        case 'daily':
+          newDate.setDate(newDate.getDate() + interval)
+          break
+        case 'weekly':
+          newDate.setDate(newDate.getDate() + interval * 7)
+          break
+        case 'monthly':
+          newDate.setMonth(newDate.getMonth() + interval)
+          break
+        case 'yearly':
+          newDate.setFullYear(newDate.getFullYear() + interval)
+          break
+      }
+      return newDate.toISOString()
+    }
+
+    nextTodo.dueDate = addInterval(todo.dueDate)
+    nextTodo.startDate = addInterval(todo.startDate)
+    nextTodo.endDate = addInterval(todo.endDate)
+
     todos.value.push(nextTodo)
   }
 
