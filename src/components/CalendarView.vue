@@ -102,7 +102,7 @@
             <div
               v-for="todo in day.todos.slice(0, 3)"
               :key="todo.id"
-              class="text-xs p-1 rounded truncate cursor-move"
+              class="text-xs p-1 rounded cursor-move"
               :class="[
                 'hover:opacity-80',
                 todo.completed ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 line-through' :
@@ -117,7 +117,12 @@
               @drop="handleDrop($event, day)"
               @click.stop="handleTodoClick(todo)"
             >
-              {{ todo.title }}
+              <div class="font-medium truncate">{{ todo.title }}</div>
+              <div v-if="todo.startDate" class="text-xs opacity-75 truncate">
+                <Icon name="clock" class="w-3 h-3 inline" />
+                {{ formatTime(todo.startDate) }}
+                <span v-if="todo.endDate"> - {{ formatTime(todo.endDate) }}</span>
+              </div>
             </div>
             <div v-if="day.todos.length > 3" class="text-xs text-gray-500 dark:text-gray-400 text-center">
               +{{ day.todos.length - 3 }} 更多
@@ -177,7 +182,7 @@
                   <div
                     v-for="todo in getTodosForTimeSlot(day, hour)"
                     :key="todo.id"
-                    class="text-xs p-1 rounded truncate cursor-move"
+                    class="text-xs p-1 rounded cursor-move"
                     :class="[
                       'hover:opacity-80',
                       todo.completed ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 line-through' :
@@ -190,7 +195,11 @@
                     @dragstart="handleDragStart($event, todo)"
                     @click.stop="handleTodoClick(todo)"
                   >
-                    {{ todo.title }}
+                    <div class="font-medium truncate">{{ todo.title }}</div>
+                    <div v-if="todo.startDate && todo.endDate" class="text-xs opacity-75 truncate">
+                      <Icon name="clock" class="w-3 h-3 inline" />
+                      {{ formatTime(todo.startDate) }} - {{ formatTime(todo.endDate) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -611,21 +620,26 @@ const handleDrop = (event, day, hour = null) => {
       updates.endDate = newEndDate.toISOString()
     }
   } else {
-    // For month view, just update the date without time
+    // For month view, update the date and keep time precision to hour
     const newStartDate = new Date(day.date)
     if (todo.startDate) {
       const oldStart = new Date(todo.startDate)
-      newStartDate.setHours(oldStart.getHours(), oldStart.getMinutes(), 0, 0)
+      newStartDate.setHours(oldStart.getHours(), 0, 0, 0)
+    } else {
+      // Default to current hour if no start time
+      newStartDate.setMinutes(0, 0, 0)
     }
     updates.startDate = newStartDate.toISOString()
     
-    // Update end date if exists
+    // Update end date if exists - keep duration, precision to hour
     if (todo.endDate) {
       const oldEnd = new Date(todo.endDate)
-      const oldStart = new Date(todo.startDate || todo.dueDate || Date.now())
+      const oldStart = new Date(todo.startDate || Date.now())
       const duration = oldEnd - oldStart
       
       const newEndDate = new Date(newStartDate.getTime() + duration)
+      // Ensure precision to hour
+      newEndDate.setMinutes(0, 0, 0)
       updates.endDate = newEndDate.toISOString()
     }
   }
@@ -640,6 +654,15 @@ const getTodosForTimeSlot = (day, hour) => {
     if (!todo.startDate) return false
     const startHour = new Date(todo.startDate).getHours()
     return startHour === hour
+  })
+}
+
+// Format time (hour only)
+const formatTime = (dateStr) => {
+  const date = new Date(dateStr)
+  return date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
