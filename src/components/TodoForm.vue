@@ -53,6 +53,41 @@
     <!-- Category Selector -->
     <CategorySelector v-model="form.categories" />
 
+    <!-- Time Period -->
+    <div class="space-y-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        时间周期
+      </label>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            开始时间
+          </label>
+          <input
+            v-model="form.startDate"
+            type="datetime-local"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            结束时间
+          </label>
+          <input
+            v-model="form.endDate"
+            type="datetime-local"
+            :class="[
+              'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent',
+              formError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+            ]"
+          />
+        </div>
+      </div>
+      <p v-if="formError" class="text-sm text-red-500">
+        {{ formError }}
+      </p>
+    </div>
+
     <!-- Due Date -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -138,7 +173,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
 import Icon from './Icon.vue'
 import CategorySelector from './CategorySelector.vue'
 
@@ -163,11 +198,28 @@ const form = reactive({
   description: '',
   priority: 'none',
   categories: [],
+  startDate: '',
+  endDate: '',
   dueDate: '',
   recurrenceType: ''
 })
 
+const formError = ref('')
+
 const editingTodo = computed(() => props.editTodo)
+
+const validateDates = () => {
+  if (form.startDate && form.endDate) {
+    const start = new Date(form.startDate)
+    const end = new Date(form.endDate)
+    if (end <= start) {
+      formError.value = '结束时间必须大于开始时间'
+      return false
+    }
+  }
+  formError.value = ''
+  return true
+}
 
 const initForm = () => {
   if (props.editTodo) {
@@ -175,6 +227,8 @@ const initForm = () => {
     form.description = props.editTodo.description
     form.priority = props.editTodo.priority
     form.categories = props.editTodo.categories
+    form.startDate = props.editTodo.startDate ? props.editTodo.startDate.slice(0, 16) : ''
+    form.endDate = props.editTodo.endDate ? props.editTodo.endDate.slice(0, 16) : ''
     form.dueDate = props.editTodo.dueDate ? props.editTodo.dueDate.slice(0, 16) : ''
     form.recurrenceType = props.editTodo.recurrence?.type || ''
   } else {
@@ -182,14 +236,24 @@ const initForm = () => {
     form.description = ''
     form.priority = 'none'
     form.categories = []
+    form.startDate = ''
+    form.endDate = ''
     form.dueDate = ''
     form.recurrenceType = ''
   }
+  formError.value = ''
 }
 
 const handleSubmit = () => {
+  if (!validateDates()) {
+    return
+  }
+  
   const todoData = {
     ...form,
+    startDate: form.startDate ? new Date(form.startDate).toISOString() : null,
+    endDate: form.endDate ? new Date(form.endDate).toISOString() : null,
+    dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
     recurrence: form.recurrenceType ? { type: form.recurrenceType, interval: 1 } : null
   }
   emit('submit', todoData)
@@ -212,4 +276,11 @@ const removeSubtask = (index) => {
 
 // Watch for editTodo changes
 watch(() => props.editTodo, initForm, { immediate: true })
+
+// Watch for date changes to clear error
+watch([() => form.startDate, () => form.endDate], () => {
+  if (formError.value) {
+    validateDates()
+  }
+})
 </script>

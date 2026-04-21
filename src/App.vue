@@ -74,6 +74,7 @@ const showMobileMenu = ref(false)
 const navItems = [
   { to: '/', label: '仪表盘' },
   { to: '/tasks', label: '任务' },
+  { to: '/calendar', label: '日历' },
   { to: '/statistics', label: '统计' },
   { to: '/settings', label: '设置' }
 ]
